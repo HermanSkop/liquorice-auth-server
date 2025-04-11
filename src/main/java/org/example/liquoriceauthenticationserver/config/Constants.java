@@ -9,4 +9,5 @@ public class Constants {
     public static final String PASSWORD_REGEX_MESSAGE = "Password must contain at least one letter, one number, one special character, and be at least 8 characters long.";
 
     public final static String BASE_PATH = "/auth";
+    public static final String CLIENT_SERVER = "http://localhost:4200";
 }
