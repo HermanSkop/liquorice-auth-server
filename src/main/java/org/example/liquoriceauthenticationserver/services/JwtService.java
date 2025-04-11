@@ -14,6 +14,7 @@ import java.security.Key;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -35,7 +36,7 @@ public class JwtService {
 
             return Jwts.builder()
                     .setSubject(claims.getSubject())
-                    .claim("role", claims.get("role", String.class))
+                    .claim("roles", claims.get("roles", List.class))
                     .setId(UUID.randomUUID().toString())
                     .setIssuedAt(Date.from(Instant.now()))
                     .setExpiration(Date.from(Instant.now().plus(jwtConfig.getAccessTokenExpiration(), ChronoUnit.MILLIS)))
@@ -56,7 +57,7 @@ public class JwtService {
 
         return Jwts.builder()
                 .setSubject(authentication.getName())
-                .claim("role", user.getRole())
+                .claim("roles", List.of(user.getRole()))
                 .setIssuedAt(Date.from(now))
                 .setExpiration(Date.from(now.plus(expiration, ChronoUnit.MILLIS)))
                 .signWith(getSigningKey(), Constants.JWT_SIGNATURE_ALGORITHM)
