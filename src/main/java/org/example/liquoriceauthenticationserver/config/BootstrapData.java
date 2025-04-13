@@ -17,7 +17,7 @@ public class BootstrapData {
         return args -> {
             mongoTemplate.getDb().drop();
 
-            User admin = User.builder().email("Admin1@a.a").role(User.Role.ADMIN).password(passwordEncoder.encode("Admin1@a.a")).build();
+                User admin = User.builder().email("Admin1@a.a").role(User.Role.ADMIN).password(passwordEncoder.encode("Admin1@a.a")).build();
             userRepository.save(admin);
         };
     }

@@ -29,7 +29,8 @@ public class JwtLoggingFilter extends OncePerRequestFilter {
             try {
                 Jwt jwt = jwtDecoder.decode(token);
                 String role = jwt.getClaimAsString("role");
-                log.info("JWT token role: {}", role);
+                String userId = jwt.getClaimAsString("userId");
+                log.info("JWT token - userId: {}, role: {}", userId, role);
 
                 Instant expiration = jwt.getExpiresAt();
                 if (expiration != null) {

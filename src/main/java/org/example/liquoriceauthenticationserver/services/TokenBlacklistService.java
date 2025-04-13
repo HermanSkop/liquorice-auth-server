@@ -22,7 +22,4 @@ public class TokenBlacklistService {
                 TimeUnit.MILLISECONDS);
     }
 
-    public boolean isTokenBlacklisted(String token) {
-        return redisTemplate.hasKey(token);
-    }
 }
