@@ -1,5 +1,6 @@
-package org.example.liquoriceauthenticationserver.config;
+package org.example.liquoriceauthenticationserver.config.security;
 
+import org.example.liquoriceauthenticationserver.config.Constants;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;

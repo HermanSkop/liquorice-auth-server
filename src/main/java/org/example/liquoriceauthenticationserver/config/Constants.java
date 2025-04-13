@@ -10,4 +10,5 @@ public class Constants {
 
     public final static String BASE_PATH = "/auth";
     public static final String CLIENT_SERVER = "http://localhost:4200";
+    public static final String OAUTH2_REDIRECT_PATH = "/oauth2/redirect";
 }

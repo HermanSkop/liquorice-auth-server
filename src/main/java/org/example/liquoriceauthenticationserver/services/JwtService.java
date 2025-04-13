@@ -2,89 +2,92 @@ package org.example.liquoriceauthenticationserver.services;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 import lombok.RequiredArgsConstructor;
-import org.example.liquoriceauthenticationserver.config.Constants;
-import org.example.liquoriceauthenticationserver.config.JwtConfig;
 import org.example.liquoriceauthenticationserver.models.User;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
+import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 
-import java.security.Key;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
-import java.util.UUID;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
 public class JwtService {
-    private final JwtConfig jwtConfig;
 
-    public String generateAccessToken(Authentication authentication) {
-        return generateToken(authentication, jwtConfig.getAccessTokenExpiration());
+    @Value("${jwt.secret-key}")
+    private String secretKey;
+
+    @Value("${jwt.access-token-expiration}")
+    private long accessTokenExpiration;
+
+    @Value("${jwt.refresh-token-expiration}")
+    private long refreshTokenExpiration;
+
+    private User getUserFromAuthentication(Authentication authentication) {
+        if (authentication.getPrincipal() instanceof User) {
+            return (User) authentication.getPrincipal();
+        }
+        throw new IllegalArgumentException("Invalid authentication principal");
     }
 
-    public String generateAccessToken(String refreshToken) {
-        try {
-            Claims claims = Jwts.parserBuilder()
-                .setSigningKey(getSigningKey())
-                .build()
-                .parseClaimsJws(refreshToken)
-                .getBody();
-
-            return Jwts.builder()
-                    .setSubject(claims.getSubject())
-                    .claim("roles", claims.get("roles", List.class))
-                    .claim("userId", claims.get("userId"))
-                    .setId(UUID.randomUUID().toString())
-                    .setIssuedAt(Date.from(Instant.now()))
-                    .setExpiration(Date.from(Instant.now().plus(jwtConfig.getAccessTokenExpiration(), ChronoUnit.MILLIS)))
-                    .signWith(getSigningKey(), Constants.JWT_SIGNATURE_ALGORITHM)
-                    .compact();
-        } catch (Exception e) {
-            return null;
-        }
+    public String generateAccessToken(Authentication authentication) {
+        User user = getUserFromAuthentication(authentication);
+        return generateToken(user.getId(), user.getEmail(), user.getRole().name(), "ACCESS", accessTokenExpiration);
     }
 
     public String generateRefreshToken(Authentication authentication) {
-        return generateToken(authentication, jwtConfig.getRefreshTokenExpiration());
+        User user = getUserFromAuthentication(authentication);
+        return generateToken(user.getId(), user.getEmail(), user.getRole().name(), "REFRESH", refreshTokenExpiration);
     }
 
-    private String generateToken(Authentication authentication, long expiration) {
-        User user = (User) authentication.getPrincipal();
-        Instant now = Instant.now();
-
-        return Jwts.builder()
-                .setSubject(authentication.getName())
-                .claim("roles", List.of(user.getRole()))
-                .claim("userId", user.getId())
-                .setIssuedAt(Date.from(now))
-                .setExpiration(Date.from(now.plus(expiration, ChronoUnit.MILLIS)))
-                .signWith(getSigningKey(), Constants.JWT_SIGNATURE_ALGORITHM)
-                .compact();
-    }
-
-    private Key getSigningKey() {
-        return Keys.hmacShaKeyFor(jwtConfig.getSecretKey().getBytes());
+    public String generateAccessTokenFromRefreshToken(String refreshToken) {
+        Claims claims = extractAllClaims(refreshToken);
+        
+        if (!"REFRESH".equals(claims.get("type", String.class))) {
+            throw new IllegalArgumentException("Invalid token type");
+        }
+        
+        return generateToken(
+                claims.get("userId", String.class),
+                claims.get("email", String.class),
+                claims.get("roles", String.class),
+                "ACCESS",
+                accessTokenExpiration
+        );
     }
 
     public long getTokenRemainingLifetimeMillis(String token) {
-        try {
-            Claims claims = Jwts.parserBuilder()
-                .setSigningKey(getSigningKey())
+        return extractAllClaims(token).getExpiration().getTime() - System.currentTimeMillis();
+    }
+
+    private Claims extractAllClaims(String token) {
+        return Jwts.parserBuilder()
+                .setSigningKey(Keys.hmacShaKeyFor(secretKey.getBytes()))
                 .build()
                 .parseClaimsJws(token)
                 .getBody();
+    }
 
-            Date expiration = claims.getExpiration();
-
-            long remainingTime = expiration.getTime() - System.currentTimeMillis();
-
-            return Math.max(0, remainingTime);
-        } catch (Exception e) {
-            return 0;
-        }
+    private String generateToken(String userId, String email, String role, String tokenType, long expiration) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("email", email);
+        claims.put("type", tokenType);
+        claims.put("roles", List.of(role));
+        claims.put("userId", userId);
+        
+        return Jwts.builder()
+                .setClaims(claims)
+                .setSubject(email)
+                .setIssuedAt(new Date())
+                .setExpiration(new Date(System.currentTimeMillis() + expiration))
+                .signWith(Keys.hmacShaKeyFor(secretKey.getBytes()), SignatureAlgorithm.HS256)
+                .compact();
     }
 }

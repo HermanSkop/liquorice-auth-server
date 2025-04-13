@@ -1,4 +1,4 @@
-package org.example.liquoriceauthenticationserver.config;
+package org.example.liquoriceauthenticationserver.config.security;
 
 import lombok.NonNull;
 import org.springframework.core.convert.converter.Converter;

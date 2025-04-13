@@ -1,4 +1,4 @@
-package org.example.liquoriceauthenticationserver.config;
+package org.example.liquoriceauthenticationserver.config.security;
 
 import lombok.Getter;
 import lombok.Setter;
