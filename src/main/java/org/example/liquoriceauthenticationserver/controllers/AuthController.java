@@ -15,6 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -32,14 +33,18 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<AuthResponseDto> login(@RequestBody @Valid AuthRequestDto request) {
         try {
-            Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
+            Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
+            );
 
             String accessToken = jwtService.generateAccessToken(authentication);
             String refreshToken = jwtService.generateRefreshToken(authentication);
 
             return ResponseEntity.ok(new AuthResponseDto(accessToken, refreshToken));
-        } catch (Exception e) {
+        } catch (BadCredentialsException e) {
             throw new IllegalArgumentException("email or password", e);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Authentication failed", e);
         }
     }
 

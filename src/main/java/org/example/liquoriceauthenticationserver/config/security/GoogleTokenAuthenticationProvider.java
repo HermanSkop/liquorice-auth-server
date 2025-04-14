@@ -5,6 +5,7 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken.Payload;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.gson.GsonFactory;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.example.liquoriceauthenticationserver.models.User;
 import org.example.liquoriceauthenticationserver.repsitories.UserRepository;
@@ -22,16 +23,21 @@ import java.util.Collections;
 public class GoogleTokenAuthenticationProvider {
 
     private final UserRepository userRepository;
+    private GoogleIdTokenVerifier verifier;
+
     @Value("${spring.security.oauth2.client.registration.google.client-id}")
     private String clientId;
 
+    @PostConstruct
+    public void init() {
+        verifier = new GoogleIdTokenVerifier.Builder(
+                new NetHttpTransport(), new GsonFactory())
+                .setAudience(Collections.singletonList(clientId))
+                .build();
+    }
+
     public Authentication authenticate(String idTokenString) throws AuthenticationException {
         try {
-            GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(
-                    new NetHttpTransport(), new GsonFactory())
-                    .setAudience(Collections.singletonList(clientId))
-                    .build();
-
             GoogleIdToken idToken = verifier.verify(idTokenString);
             if (idToken == null) {
                 throw new AuthenticationException("Invalid ID token") {};

@@ -53,11 +53,13 @@ public class JwtService {
         if (!"REFRESH".equals(claims.get("type", String.class))) {
             throw new IllegalArgumentException("Invalid token type");
         }
+
+        String role = claims.get("roles", List.class).get(0).toString();
         
         return generateToken(
                 claims.get("userId", String.class),
                 claims.get("email", String.class),
-                claims.get("roles", String.class),
+                role,
                 "ACCESS",
                 accessTokenExpiration
         );
